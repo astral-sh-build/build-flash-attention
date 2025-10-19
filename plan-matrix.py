@@ -11,10 +11,10 @@ from packaging.version import Version
 
 # Add or remove versions as needed based on flash-attention compatibility.
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    # "2.4.1",
-    # "2.5.1",
-    # "2.6.0",
-    # "2.7.1",
+    "2.4.1",
+    "2.5.1",
+    "2.6.0",
+    "2.7.1",
     "2.8.0",
 ]
 
