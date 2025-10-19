@@ -145,7 +145,7 @@ jobs:
             TORCH_CUDA_VERSION=${{ env.TORCH_CUDA_VERSION }}
             FLASH_ATTENTION_FORCE_BUILD="TRUE"
             FLASH_ATTENTION_FORCE_CXX11_ABI=${{ matrix.cxx11-abi }}
-            MAX_JOBS=16
+            MAX_JOBS=8
             UV_PYTHON=/opt/python/cp${{ env.MATRIX_PYTHON_VERSION }}-cp${{ env.MATRIX_PYTHON_VERSION }}/bin/python
             CI_AUDITWHEEL_EXCLUDES="${{ env.CI_AUDITWHEEL_EXCLUDES }}"
           CIBW_SKIP: "*musllinux*"
@@ -160,7 +160,7 @@ jobs:
 
       - name: Rename wheel
         run: |
-          tmpname=cu${{ matrix.cuda-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11_abi }}
+          tmpname=cu${{ matrix.cuda-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}
           wheel_name=$(ls dist/*whl | xargs -n 1 basename | sed "s/-/+$tmpname-/2")
           ls dist/*whl |xargs -I {} mv {} dist/${wheel_name}
           echo "wheel_name=${wheel_name}" >> $GITHUB_ENV

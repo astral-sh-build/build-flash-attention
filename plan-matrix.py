@@ -26,10 +26,10 @@ ARCH_TORCH_PAIRS = {
 # Supported Python versions for each PyTorch version.
 # We use these to filter out the matrix.
 TORCH_PYTHON_SUPPORT = {
-    "2.4.1": ["3.9", "3.10", "3.11", "3.12"],
-    "2.5.1": ["3.9", "3.10", "3.11", "3.12"],
-    "2.6.0": ["3.9", "3.10", "3.11", "3.12"],
-    "2.7.0": ["3.10", "3.11", "3.12", "3.13"],
+    "2.4": ["3.9", "3.10", "3.11", "3.12"],
+    "2.5": ["3.9", "3.10", "3.11", "3.12"],
+    "2.6": ["3.9", "3.10", "3.11", "3.12"],
+    "2.7": ["3.10", "3.11", "3.12", "3.13"],
 }
 
 # Minimum and maximum CUDA versions for each PyTorch version.
@@ -119,9 +119,9 @@ def main() -> None:
             if torch_version not in FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS:
                 continue
 
-            for python_version in TORCH_PYTHON_SUPPORT[torch_version]:
-                torch_version_parsed = Version(torch_version)
-                torch_x_y = f"{torch_version_parsed.major}.{torch_version_parsed.minor}"
+            torch_version_parsed = Version(torch_version)
+            torch_x_y = f"{torch_version_parsed.major}.{torch_version_parsed.minor}"
+            for python_version in TORCH_PYTHON_SUPPORT[torch_x_y]:
                 cuda_versions = PYTORCH_CUDA_VERSIONS[torch_x_y]
                 for cuda_version in cuda_versions:
                     for cxx11_abi in TORCH_CXX11_ABI[torch_x_y]:
