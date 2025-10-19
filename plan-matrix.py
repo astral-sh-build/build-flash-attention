@@ -14,13 +14,12 @@ FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
     "2.4.1",
     "2.5.1",
     "2.6.0",
-    "2.7.0",
+    "2.7.1",
 ]
 
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.0"],
-    # NOTE: Add aarch64 when needed
-    # "aarch64": ["2.4.1", "2.5.1", "2.6.0", "2.7.0"],
+    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1"],
+    "aarch64": ["2.6.0", "2.7.1"],
 }
 
 # Supported Python versions for each PyTorch version.
