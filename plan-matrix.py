@@ -11,15 +11,16 @@ from packaging.version import Version
 
 # Add or remove versions as needed based on flash-attention compatibility.
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    "2.4.1",
-    "2.5.1",
-    "2.6.0",
-    "2.7.1",
+    # "2.4.1",
+    # "2.5.1",
+    # "2.6.0",
+    # "2.7.1",
+    "2.8.0",
 ]
 
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1"],
-    "aarch64": ["2.6.0", "2.7.1"],
+    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0"],
+    "aarch64": ["2.6.0", "2.7.1", "2.8.0"],
 }
 
 # Supported Python versions for each PyTorch version.
@@ -28,7 +29,8 @@ TORCH_PYTHON_SUPPORT = {
     "2.4": ["3.9", "3.10", "3.11", "3.12"],
     "2.5": ["3.9", "3.10", "3.11", "3.12"],
     "2.6": ["3.9", "3.10", "3.11", "3.12"],
-    "2.7": ["3.10", "3.11", "3.12", "3.13"],
+    "2.7": ["3.9", "3.10", "3.11", "3.12", "3.13"],
+    "2.8": ["3.9", "3.10", "3.11", "3.12", "3.13"],
 }
 
 # Minimum and maximum CUDA versions for each PyTorch version.
@@ -37,6 +39,7 @@ PYTORCH_CUDA_RANGES: dict[str, tuple[str, str]] = {
     "2.5": ("11.8", "12.4"),
     "2.6": ("11.8", "12.6"),
     "2.7": ("11.8", "12.8"),
+    "2.8": ("11.8", "12.9"),
 }
 
 # Actual CUDA versions to build against for each PyTorch version.
@@ -45,6 +48,7 @@ PYTORCH_CUDA_VERSIONS: dict[str, list[str]] = {
     "2.5": ["12.8.1"],
     "2.6": ["12.8.1"],
     "2.7": ["12.8.1"],
+    "2.8": ["12.9.0"],
 }
 
 # The glibc version to use for each PyTorch version, for manylinux builds.
@@ -53,6 +57,7 @@ TORCH_GLIBC_VERSION: dict[str, str] = {
     "2.5": "2_17",
     "2.6": "2_24",
     "2.7": "2_24",
+    "2.8": "2_28",
 }
 
 AUDITWHEEL_BLANKET_EXCLUDES = [
@@ -96,6 +101,7 @@ TORCH_CXX11_ABI = {
     "2.5": ["FALSE"],
     "2.6": ["FALSE", "TRUE"],
     "2.7": ["TRUE"],
+    "2.8": ["TRUE"],
 }
 
 # Matrix exclusions.
