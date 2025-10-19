@@ -23,6 +23,7 @@ jobs:
   plan-matrix:
     name: Plan FlashAttention build matrix
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
     permissions:
       contents: read # for actions/checkout
     outputs:
@@ -44,6 +45,7 @@ jobs:
     name: Build Wheel
     needs: [plan-matrix]
     runs-on: ${{ matrix.RUNNER }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
 
     permissions:
       contents: write
