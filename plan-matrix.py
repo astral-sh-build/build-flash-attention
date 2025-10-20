@@ -16,11 +16,12 @@ FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
     "2.6.0",
     "2.7.1",
     "2.8.0",
+    "2.9.0",
 ]
 
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0"],
-    "aarch64": ["2.6.0", "2.7.1", "2.8.0"],
+    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0", "2.9.0"],
+    "aarch64": ["2.6.0", "2.7.1", "2.8.0", "2.9.0"],
 }
 
 # Supported Python versions for each PyTorch version.
@@ -47,11 +48,12 @@ PYTORCH_CUDA_RANGES: dict[str, tuple[str, str]] = {
 
 # Actual CUDA versions to build against for each PyTorch version.
 PYTORCH_CUDA_VERSIONS: dict[str, list[str]] = {
-    "2.4": ["12.8.1"],
-    "2.5": ["12.8.1"],
-    "2.6": ["12.8.1"],
-    "2.7": ["12.8.1"],
-    "2.8": ["12.9.0"],
+    "2.4": ["12.8"],
+    "2.5": ["12.8"],
+    "2.6": ["12.8"],
+    "2.7": ["12.8"],
+    "2.8": ["12.9"],
+    "2.9": ["12.9", "13.0"],
 }
 
 # The glibc version to use for each PyTorch version, for manylinux builds.
@@ -107,6 +109,7 @@ TORCH_CXX11_ABI = {
     "2.6": ["FALSE", "TRUE"],
     "2.7": ["TRUE"],
     "2.8": ["TRUE"],
+    "2.9": ["TRUE"],
 }
 
 # Matrix exclusions.
