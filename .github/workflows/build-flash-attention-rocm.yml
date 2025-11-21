@@ -142,8 +142,8 @@ jobs:
             FLASH_ATTENTION_FORCE_BUILD="TRUE"
             FLASH_ATTENTION_FORCE_CXX11_ABI=${{ matrix.cxx11-abi }}
             BUILD_TARGET="rocm"
-            PYTORCH_ROCM_ARCH="gfx90a;gfx942;gfx950"
-            GPU_ARCHS="gfx90a;gfx942;gfx950"
+            PYTORCH_ROCM_ARCH="gfx90a;gfx942"
+            GPU_ARCHS="gfx90a;gfx942"
             MAX_JOBS=8
             UV_PYTHON=/opt/python/cp${{ env.MATRIX_PYTHON_VERSION }}-cp${{ env.MATRIX_PYTHON_VERSION }}/bin/python
             CI_AUDITWHEEL_EXCLUDES="${{ env.CI_AUDITWHEEL_EXCLUDES }}"
