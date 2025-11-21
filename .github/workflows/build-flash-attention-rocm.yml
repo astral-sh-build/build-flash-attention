@@ -132,8 +132,11 @@ jobs:
             ROCM_HOME="/opt/rocm"
             ROCM_PATH="/opt/rocm"
             HIP_PATH="/opt/rocm/hip"
+            HIP_CLANG_PATH="/opt/rocm/llvm/bin"
             LIBRARY_PATH="/usr/lib64"
             LD_LIBRARY_PATH="/usr/lib64:/opt/rocm/lib:/opt/rocm/lib64"
+            CXXFLAGS="--rocm-path=/opt/rocm"
+            CFLAGS="--rocm-path=/opt/rocm"
             AUDITWHEEL_PLAT="manylinux_${{ env.MANYLINUX_GLIBC_VERSION }}_$(uname -m)"
             MATRIX_ROCM_VERSION=${{ env.MATRIX_ROCM_VERSION }}
             MANYLINUX_ROCM_VERSION=${{ env.MANYLINUX_ROCM_VERSION }}
@@ -142,8 +145,8 @@ jobs:
             FLASH_ATTENTION_FORCE_BUILD="TRUE"
             FLASH_ATTENTION_FORCE_CXX11_ABI=${{ matrix.cxx11-abi }}
             BUILD_TARGET="rocm"
-            PYTORCH_ROCM_ARCH="gfx90a;gfx942"
-            GPU_ARCHS="gfx90a;gfx942"
+            GPU_ARCHS="${{ matrix.GPU_ARCHS }}"
+            PYTORCH_ROCM_ARCH="${{ matrix.GPU_ARCHS }}"
             MAX_JOBS=8
             UV_PYTHON=/opt/python/cp${{ env.MATRIX_PYTHON_VERSION }}-cp${{ env.MATRIX_PYTHON_VERSION }}/bin/python
             CI_AUDITWHEEL_EXCLUDES="${{ env.CI_AUDITWHEEL_EXCLUDES }}"

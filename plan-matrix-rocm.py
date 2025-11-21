@@ -48,6 +48,17 @@ PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
     ("2.9", "x86_64"): ["6.4"],  # PyTorch 2.9 officially supports ROCm 6.4
 }
 
+# GPU architectures supported by each ROCm version.
+# gfx90a: MI200 series (MI210, MI250, MI250X)
+# gfx942: MI300A, MI300X
+# gfx950: MI350, MI355 (requires ROCm 7.0+)
+ROCM_GPU_ARCHITECTURES: dict[str, list[str]] = {
+    "6.1": ["gfx90a", "gfx942"],
+    "6.2": ["gfx90a", "gfx942"],
+    "6.3": ["gfx90a", "gfx942"],
+    "6.4": ["gfx90a", "gfx942"],
+}
+
 # The glibc version to use for each PyTorch version, for manylinux builds.
 # See: https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
 TORCH_GLIBC_VERSION: dict[str, str] = {
@@ -167,6 +178,10 @@ def main() -> None:
         # RUNNER: the GitHub Actions runner to use.
         # ROCm builds run on x86_64
         row["RUNNER"] = "depot-ubuntu-24.04-16"
+
+        # GPU_ARCHS: the GPU architectures to compile for, based on ROCm version
+        gpu_archs = ROCM_GPU_ARCHITECTURES.get(row["rocm-version"], ["gfx90a", "gfx942"])
+        row["GPU_ARCHS"] = ";".join(gpu_archs)
 
     print(json.dumps(rows))
 
