@@ -1,4 +1,4 @@
-name: FlashAttention
+name: FlashAttention-ROCm
 
 permissions: {}
 
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   plan-matrix:
-    name: Plan FlashAttention build matrix
+    name: Plan FlashAttention ROCm build matrix
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
     permissions:
@@ -39,7 +39,7 @@ jobs:
       - name: Generate build matrix
         id: generate-matrix
         run: |
-          echo "matrix=$(uv run --script plan-matrix.py)" >> $GITHUB_OUTPUT
+          echo "matrix=$(uv run --script plan-matrix-rocm.py)" >> $GITHUB_OUTPUT
 
   build-wheels:
     name: Build Wheel
@@ -79,11 +79,11 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           INPUTS_FLASH_ATTENTION_VERSION: ${{ inputs.FLASH_ATTENTION_VERSION }}
 
-      - name: Checkout Flash Attention
+      - name: Checkout Flash Attention ROCm
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          repository: Dao-AILab/flash-attention
-          ref: ${{ steps.flash-attention-version.outputs.version }}
+          repository: ROCm/flash-attention
+          ref: main
           persist-credentials: false
 
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
@@ -101,13 +101,12 @@ jobs:
         with:
           enable-cache: false
 
-      - name: Set CUDA and PyTorch versions
+      - name: Set ROCm and PyTorch versions
         run: |
-          echo "MATRIX_CUDA_VERSION=$(echo ${{ matrix.MATRIX_CUDA_VERSION }})" >> $GITHUB_ENV
+          echo "MATRIX_ROCM_VERSION=$(echo ${{ matrix.MATRIX_ROCM_VERSION }})" >> $GITHUB_ENV
           echo "MATRIX_TORCH_VERSION=$(echo ${{ matrix.MATRIX_TORCH_VERSION }})" >> $GITHUB_ENV
           echo "MATRIX_PYTHON_VERSION=$(echo ${{ matrix.MATRIX_PYTHON_VERSION }})" >> $GITHUB_ENV
-          echo "MANYLINUX_CUDA_VERSION=$(echo ${{ matrix.MANYLINUX_CUDA_VERSION }})" >> $GITHUB_ENV
-          echo "MANYLINUX_CUDA_COMPAT_VERSION=$(echo ${{ matrix.MANYLINUX_CUDA_COMPAT_VERSION }})" >> $GITHUB_ENV
+          echo "MANYLINUX_ROCM_VERSION=$(echo ${{ matrix.MANYLINUX_ROCM_VERSION }})" >> $GITHUB_ENV
           echo "MANYLINUX_GLIBC_VERSION=$(echo ${{ matrix.MANYLINUX_GLIBC_VERSION }})" >> $GITHUB_ENV
           echo "CI_AUDITWHEEL_EXCLUDES=$(echo ${{ matrix.CI_AUDITWHEEL_EXCLUDES }})" >> $GITHUB_ENV
 
@@ -116,32 +115,35 @@ jobs:
           uv venv --python 3.13
           uv pip install cibuildwheel
 
-      - name: Build wheels for FlashAttention ${{ matrix.torch-version }}+cu${{ matrix.cuda-version }}
+      - name: Build wheels for FlashAttention ${{ matrix.torch-version }}+rocm${{ matrix.rocm-version }}
         run: |
           .venv/bin/cibuildwheel --output-dir dist
         env:
           CIBW_ARCHS_LINUX: ${{ matrix.target-arch }}
           CIBW_BUILD: cp${{ env.MATRIX_PYTHON_VERSION }}-*64
-          CIBW_MANYLINUX_X86_64_IMAGE: pytorch/manylinux2_28-builder:cuda${{ env.MANYLINUX_CUDA_VERSION }}
-          CIBW_MANYLINUX_AARCH64_IMAGE: pytorch/manylinuxaarch64-builder:cuda${{ env.MANYLINUX_CUDA_VERSION }}
+          CIBW_MANYLINUX_X86_64_IMAGE: pytorch/manylinux-builder:rocm${{ env.MANYLINUX_ROCM_VERSION }}
           CIBW_BEFORE_ALL: >
             curl -LsSf https://astral.sh/uv/install.sh | sh
           CIBW_BEFORE_BUILD_LINUX: >
             uv pip install typing-extensions==4.12.2 setuptools wheel ninja psutil &&
-            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/cu${MATRIX_CUDA_VERSION} &&
-            bash build_scripts/prepare_for_build.sh ${{ steps.flash-attention-version.outputs.version }}
+            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/rocm${MATRIX_ROCM_VERSION} &&
+            bash build_scripts/prepare_for_build_rocm.sh ${{ steps.flash-attention-version.outputs.version }}
           CIBW_ENVIRONMENT: >
-            PATH=$PATH:/root/.local/bin
-            CUDA_HOME="/usr/local/cuda-${{ env.MANYLINUX_CUDA_VERSION }}"
+            PATH=$PATH:/root/.local/bin:/opt/rocm/bin
+            ROCM_HOME="/opt/rocm"
+            ROCM_PATH="/opt/rocm"
+            HIP_PATH="/opt/rocm/hip"
             LIBRARY_PATH="/usr/lib64"
-            LD_LIBRARY_PATH="/usr/lib64:/usr/local/cuda-${{ env.MANYLINUX_CUDA_VERSION }}/lib64:/usr/local/cuda-${{ env.MANYLINUX_CUDA_VERSION }}/targets/${{ matrix.target-arch }}-linux/lib:/usr/local/cuda-${{ env.MANYLINUX_CUDA_VERSION }}/extras/CUPTI/lib64"
-            LDFLAGS="-ldl -L/usr/local/cuda-${{ env.MANYLINUX_CUDA_VERSION }}/targets/${{ matrix.target-arch }}-linux/lib/stubs"
+            LD_LIBRARY_PATH="/usr/lib64:/opt/rocm/lib:/opt/rocm/lib64"
             AUDITWHEEL_PLAT="manylinux_${{ env.MANYLINUX_GLIBC_VERSION }}_$(uname -m)"
-            MATRIX_CUDA_VERSION=${{ env.MATRIX_CUDA_VERSION }}
+            MATRIX_ROCM_VERSION=${{ env.MATRIX_ROCM_VERSION }}
             MATRIX_TORCH_VERSION=${{ env.MATRIX_TORCH_VERSION }}
             MATRIX_PYTHON_VERSION=${{ env.MATRIX_PYTHON_VERSION }}
             FLASH_ATTENTION_FORCE_BUILD="TRUE"
             FLASH_ATTENTION_FORCE_CXX11_ABI=${{ matrix.cxx11-abi }}
+            BUILD_TARGET="rocm"
+            PYTORCH_ROCM_ARCH="gfx90a;gfx942;gfx950"
+            GPU_ARCHS="gfx90a;gfx942;gfx950"
             MAX_JOBS=8
             UV_PYTHON=/opt/python/cp${{ env.MATRIX_PYTHON_VERSION }}-cp${{ env.MATRIX_PYTHON_VERSION }}/bin/python
             CI_AUDITWHEEL_EXCLUDES="${{ env.CI_AUDITWHEEL_EXCLUDES }}"
@@ -157,7 +159,7 @@ jobs:
 
       - name: Rename wheel
         run: |
-          tmpname=cu${{ matrix.cuda-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}
+          tmpname=rocm${{ matrix.rocm-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}
           wheel_name=$(ls dist/*whl | xargs -n 1 basename | sed "s/-/+$tmpname-/2")
           ls dist/*whl |xargs -I {} mv {} dist/${wheel_name}
           echo "wheel_name=${wheel_name}" >> $GITHUB_ENV
