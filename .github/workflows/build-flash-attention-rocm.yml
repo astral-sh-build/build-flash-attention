@@ -131,12 +131,11 @@ jobs:
             PATH=$PATH:/root/.local/bin:/opt/rocm/bin
             ROCM_HOME="/opt/rocm"
             ROCM_PATH="/opt/rocm"
-            HIP_PATH="/opt/rocm/hip"
+            HIP_PATH="/opt/rocm"
             HIP_CLANG_PATH="/opt/rocm/llvm/bin"
             LIBRARY_PATH="/usr/lib64"
             LD_LIBRARY_PATH="/usr/lib64:/opt/rocm/lib:/opt/rocm/lib64"
-            CXXFLAGS="--rocm-path=/opt/rocm"
-            CFLAGS="--rocm-path=/opt/rocm"
+            HIPCC_COMPILE_FLAGS_APPEND="--rocm-path=/opt/rocm --hip-path=/opt/rocm"
             AUDITWHEEL_PLAT="manylinux_${{ env.MANYLINUX_GLIBC_VERSION }}_$(uname -m)"
             MATRIX_ROCM_VERSION=${{ env.MATRIX_ROCM_VERSION }}
             MANYLINUX_ROCM_VERSION=${{ env.MANYLINUX_ROCM_VERSION }}
