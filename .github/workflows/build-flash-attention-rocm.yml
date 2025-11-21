@@ -126,8 +126,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
           CIBW_BEFORE_BUILD_LINUX: >
             uv pip install typing-extensions==4.12.2 setuptools wheel ninja psutil &&
-            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/rocm${MANYLINUX_ROCM_VERSION} &&
-            bash build_scripts/prepare_for_build_rocm.sh ${{ steps.flash-attention-version.outputs.version }}
+            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/rocm${MANYLINUX_ROCM_VERSION}
           CIBW_ENVIRONMENT: >
             PATH=$PATH:/root/.local/bin:/opt/rocm/bin
             ROCM_HOME="/opt/rocm"
