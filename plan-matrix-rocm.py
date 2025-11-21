@@ -10,10 +10,10 @@ import json
 from packaging.version import Version
 
 # Add or remove versions as needed based on flash-attention ROCm compatibility.
-# ROCm Flash Attention requires PyTorch 2.2 and later
+# ROCm Flash Attention requires PyTorch 2.6 and later
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    "2.4.1",
-    "2.5.1",
+    # "2.4.1",
+    # "2.5.1",
     "2.6.0",
     "2.7.1",
     "2.8.0",
@@ -22,7 +22,7 @@ FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
 
 # ROCm builds are x86_64 only
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0", "2.9.0"],
+    "x86_64": ["2.6.0", "2.7.1", "2.8.0", "2.9.0"],
 }
 
 # Supported Python versions for each PyTorch version.
@@ -40,8 +40,8 @@ TORCH_PYTHON_SUPPORT = {
 # Only include versions where official PyTorch wheels exist.
 # See: https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
 PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
-    ("2.4", "x86_64"): ["6.1"],  # PyTorch 2.4 officially supports ROCm 6.1
-    ("2.5", "x86_64"): ["6.2"],  # PyTorch 2.5 officially supports ROCm 6.2
+    # ("2.4", "x86_64"): ["6.2"],  # PyTorch 2.4 works with ROCm 6.2 (6.1 has compiler issues)
+    # ("2.5", "x86_64"): ["6.2"],  # PyTorch 2.5 officially supports ROCm 6.2
     ("2.6", "x86_64"): ["6.2"],  # PyTorch 2.6 officially supports ROCm 6.2.4
     ("2.7", "x86_64"): ["6.3"],  # PyTorch 2.7 officially supports ROCm 6.3
     ("2.8", "x86_64"): ["6.4"],  # PyTorch 2.8 officially supports ROCm 6.4
