@@ -126,7 +126,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
           CIBW_BEFORE_BUILD_LINUX: >
             uv pip install typing-extensions==4.12.2 setuptools wheel ninja psutil &&
-            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/rocm${MATRIX_ROCM_VERSION} &&
+            uv pip install --no-cache-dir torch==${{ matrix.torch-version }} --index-url https://download.pytorch.org/whl/rocm${MANYLINUX_ROCM_VERSION} &&
             bash build_scripts/prepare_for_build_rocm.sh ${{ steps.flash-attention-version.outputs.version }}
           CIBW_ENVIRONMENT: >
             PATH=$PATH:/root/.local/bin:/opt/rocm/bin
@@ -137,6 +137,7 @@ jobs:
             LD_LIBRARY_PATH="/usr/lib64:/opt/rocm/lib:/opt/rocm/lib64"
             AUDITWHEEL_PLAT="manylinux_${{ env.MANYLINUX_GLIBC_VERSION }}_$(uname -m)"
             MATRIX_ROCM_VERSION=${{ env.MATRIX_ROCM_VERSION }}
+            MANYLINUX_ROCM_VERSION=${{ env.MANYLINUX_ROCM_VERSION }}
             MATRIX_TORCH_VERSION=${{ env.MATRIX_TORCH_VERSION }}
             MATRIX_PYTHON_VERSION=${{ env.MATRIX_PYTHON_VERSION }}
             FLASH_ATTENTION_FORCE_BUILD="TRUE"

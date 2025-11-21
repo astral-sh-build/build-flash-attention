@@ -37,15 +37,15 @@ TORCH_PYTHON_SUPPORT = {
 }
 
 # ROCm versions to build against for each PyTorch version.
-# ROCm 6.0+ is required for Flash Attention.
+# Only include versions where official PyTorch wheels exist.
 # See: https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
 PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
-    ("2.4", "x86_64"): ["6.0", "6.1"],
-    ("2.5", "x86_64"): ["6.0", "6.1"],
-    ("2.6", "x86_64"): ["6.0", "6.1", "6.2"],
-    ("2.7", "x86_64"): ["6.1", "6.2"],
-    ("2.8", "x86_64"): ["6.1", "6.2", "6.3"],
-    ("2.9", "x86_64"): ["6.2", "6.3"],
+    ("2.4", "x86_64"): ["6.1"],  # PyTorch 2.4 officially supports ROCm 6.1
+    ("2.5", "x86_64"): ["6.2"],  # PyTorch 2.5 officially supports ROCm 6.2
+    ("2.6", "x86_64"): ["6.2"],  # PyTorch 2.6 officially supports ROCm 6.2.4
+    ("2.7", "x86_64"): ["6.3"],  # PyTorch 2.7 officially supports ROCm 6.3
+    ("2.8", "x86_64"): ["6.4"],  # PyTorch 2.8 officially supports ROCm 6.4
+    ("2.9", "x86_64"): ["6.4"],  # PyTorch 2.9 officially supports ROCm 6.4
 }
 
 # The glibc version to use for each PyTorch version, for manylinux builds.
