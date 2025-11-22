@@ -87,68 +87,61 @@ jobs:
           persist-credentials: false
           submodules: true
 
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: "3.13"
-
       - name: Checkout build scripts
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           path: build_scripts
           persist-credentials: false
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6
-        with:
-          enable-cache: false
-
-      - name: Set environment variables
+      - name: Build wheel in ROCm container
         run: |
-          echo "MATRIX_ROCM_VERSION=${{ matrix.MATRIX_ROCM_VERSION }}" >> $GITHUB_ENV
-          echo "MATRIX_TORCH_VERSION=${{ matrix.MATRIX_TORCH_VERSION }}" >> $GITHUB_ENV
-          echo "MATRIX_PYTHON_VERSION=${{ matrix.MATRIX_PYTHON_VERSION }}" >> $GITHUB_ENV
+          docker run --rm \
+            -v $(pwd):/workspace \
+            -w /workspace \
+            -e GPU_ARCHS="${{ matrix.GPU_ARCHS }}" \
+            -e PYTORCH_ROCM_ARCH="${{ matrix.GPU_ARCHS }}" \
+            -e FLASH_ATTENTION_FORCE_BUILD="TRUE" \
+            -e FLASH_ATTENTION_FORCE_CXX11_ABI="${{ matrix.cxx11-abi }}" \
+            -e BUILD_TARGET="rocm" \
+            -e MAX_JOBS=8 \
+            ${{ matrix.DOCKER_IMAGE }} \
+            bash -c '
+              set -ex
 
-      - name: Install cibuildwheel
-        run: |
-          uv venv --python 3.13
-          uv pip install cibuildwheel
+              # Fix git ownership issues when running as root in container
+              git config --global --add safe.directory "*"
 
-      - name: Build wheels for FlashAttention ${{ matrix.torch-version }}+rocm${{ matrix.rocm-version }}
-        run: |
-          .venv/bin/cibuildwheel --output-dir dist
-        env:
-          CIBW_ARCHS_LINUX: ${{ matrix.target-arch }}
-          CIBW_BUILD: cp${{ env.MATRIX_PYTHON_VERSION }}-*64
-          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.DOCKER_IMAGE }}
-          CIBW_BEFORE_ALL: >
-            git config --global --add safe.directory "*"
-          CIBW_BEFORE_BUILD_LINUX: >
-            pip install ninja packaging setuptools wheel
-          CIBW_ENVIRONMENT: >
-            GPU_ARCHS="${{ matrix.GPU_ARCHS }}"
-            PYTORCH_ROCM_ARCH="${{ matrix.GPU_ARCHS }}"
-            FLASH_ATTENTION_FORCE_BUILD="TRUE"
-            FLASH_ATTENTION_FORCE_CXX11_ABI=${{ matrix.cxx11-abi }}
-            BUILD_TARGET="rocm"
-            MAX_JOBS=8
-          CIBW_SKIP: "*musllinux*"
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-            auditwheel repair -w {dest_dir} {wheel}
-            --exclude libc10.so
-            --exclude libc10_hip.so
-            --exclude libtorch.so
-            --exclude libtorch_python.so
-            --exclude libtorch_cpu.so
-            --exclude libtorch_hip.so
-            --exclude libamdhip64.so
-            --exclude libamdhip64.so.6
-            --exclude libhiprtc.so
-            --exclude libhiprtc.so.6
-            --exclude librocblas.so
-            --exclude librocblas.so.4
-            --exclude libhsa-runtime64.so.1
-            --exclude libamd_comgr.so.2
-          CIBW_BUILD_FRONTEND: "build; args: --no-isolation"
+              # Install build dependencies
+              pip install --no-cache-dir ninja packaging setuptools wheel build auditwheel
+
+              # Build the wheel
+              python -m build --wheel --no-isolation --outdir /workspace/dist
+
+              # Repair the wheel with auditwheel
+              mkdir -p /workspace/dist-repaired
+              auditwheel repair -w /workspace/dist-repaired /workspace/dist/*.whl \
+                --exclude libc10.so \
+                --exclude libc10_hip.so \
+                --exclude libtorch.so \
+                --exclude libtorch_python.so \
+                --exclude libtorch_cpu.so \
+                --exclude libtorch_hip.so \
+                --exclude libamdhip64.so \
+                --exclude libamdhip64.so.6 \
+                --exclude libhiprtc.so \
+                --exclude libhiprtc.so.6 \
+                --exclude librocblas.so \
+                --exclude librocblas.so.4 \
+                --exclude libhsa-runtime64.so.1 \
+                --exclude libamd_comgr.so.2
+
+              # Move repaired wheel back to dist
+              rm -f /workspace/dist/*.whl
+              mv /workspace/dist-repaired/*.whl /workspace/dist/
+
+              # Show what was built
+              ls -lh /workspace/dist/
+            '
 
       - name: Log Built Wheels
         run: |
