@@ -9,44 +9,36 @@ import json
 
 from packaging.version import Version
 
-# Add or remove versions as needed based on flash-attention ROCm compatibility.
-# Build only versions where BOTH official PyTorch ROCm wheels AND
-# pytorch/manylinux-builder Docker images exist
+# Build flash-attention using rocm/pytorch Docker images
+# Tag format: rocm{ROCM_VERSION}_ubuntu{UBUNTU_VERSION}_py{PYTHON_VERSION}_pytorch_release_{PYTORCH_VERSION}
+
+# PyTorch versions to build
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    # "2.4.1",  # ROCm 6.1 wheels exist, but has issues
-    "2.5.0",   # ROCm 6.2 wheels and rocm6.2 builder available
-    "2.6.0",   # ROCm 6.1 wheels and rocm6.1 builder available
-    # "2.5.1",  # No ROCm wheels available
-    # "2.7.1",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
-    # "2.8.0",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
-    # "2.9.0",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
+    "2.7.1",
+    "2.8.0",
+    # "2.9.0",  # No rocm/pytorch images available yet
 ]
 
 # ROCm builds are x86_64 only
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.5.0", "2.6.0"],
+    "x86_64": ["2.7.1", "2.8.0"],
 }
 
-# Supported Python versions for each PyTorch version.
-# See: https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
-TORCH_PYTHON_SUPPORT = {
-    "2.4": ["3.9", "3.10", "3.11", "3.12"],
-    "2.5": ["3.9", "3.10", "3.11", "3.12"],
-    "2.6": ["3.9", "3.10", "3.11", "3.12"],
-    "2.7": ["3.9", "3.10", "3.11", "3.12", "3.13"],
-    "2.8": ["3.9", "3.10", "3.11", "3.12", "3.13"],
-    "2.9": ["3.10", "3.11", "3.12", "3.13", "3.14"],
-}
-
-# ROCm versions to build against for each PyTorch version.
-# Only include versions where BOTH official PyTorch wheels AND manylinux-builder images exist
-PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
-    # ("2.4", "x86_64"): ["6.1"],  # Wheels and builder exist but has issues
-    ("2.5", "x86_64"): ["6.2"],     # Both rocm6.2 wheels and builder exist
-    ("2.6", "x86_64"): ["6.1"],     # Both rocm6.1 wheels and builder exist
-    # ("2.7", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
-    # ("2.8", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
-    # ("2.9", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
+# Available rocm/pytorch image configurations
+# Based on actual available tags from https://hub.docker.com/r/rocm/pytorch
+ROCM_PYTORCH_IMAGES: dict[tuple[str, str], list[dict]] = {
+    # PyTorch 2.7.1 available configurations
+    ("2.7", "x86_64"): [
+        {"rocm": "6.4.4", "ubuntu": "22.04", "python": "3.10"},
+        {"rocm": "6.4.4", "ubuntu": "24.04", "python": "3.12"},
+        {"rocm": "7.1", "ubuntu": "22.04", "python": "3.10"},
+        {"rocm": "7.1", "ubuntu": "24.04", "python": "3.12"},
+    ],
+    # PyTorch 2.8.0 available configurations
+    ("2.8", "x86_64"): [
+        {"rocm": "7.1", "ubuntu": "22.04", "python": "3.10"},
+        {"rocm": "7.1", "ubuntu": "24.04", "python": "3.12"},
+    ],
 }
 
 # GPU architectures supported by each ROCm version.
@@ -54,56 +46,23 @@ PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
 # gfx942: MI300A, MI300X
 # gfx950: MI350, MI355 (requires ROCm 7.0+)
 ROCM_GPU_ARCHITECTURES: dict[str, list[str]] = {
-    "6.1": ["gfx90a", "gfx942"],
-    "6.2": ["gfx90a", "gfx942"],
-    "6.3": ["gfx90a", "gfx942"],
     "6.4": ["gfx90a", "gfx942"],
+    "7.0": ["gfx90a", "gfx942", "gfx950"],
+    "7.1": ["gfx90a", "gfx942", "gfx950"],
 }
 
-# The glibc version to use for each PyTorch version, for manylinux builds.
-# See: https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
-TORCH_GLIBC_VERSION: dict[str, str] = {
-    "2.4": "2_17",
-    "2.5": "2_17",
-    "2.6": "2_24",
-    "2.7": "2_24",
-    "2.8": "2_24",
-    "2.9": "2_24",
-}
-
-AUDITWHEEL_BLANKET_EXCLUDES = [
-    "libc10.so",
-    "libc10_hip.so",
-    "libtorch.so",
-    "libtorch_python.so",
-    "libtorch_cpu.so",
-    "libtorch_hip.so",
-    "libamdhip64.so",
-    "libamdhip64.so.6",
-    "libhiprtc.so",
-    "libhiprtc.so.6",
-    "librocblas.so",
-    "librocblas.so.4",
-]
-
-AUDITWHEEL_ROCM_VERSION_EXCLUDES = {
-    "6": [
-        "libhsa-runtime64.so.1",
-        "libamd_comgr.so.2",
-    ],
-}
-
-# Matrix exclusions.
+# Matrix exclusions
 EXCLUSIONS = [
-    # No exclusions yet.
+    # No exclusions yet
 ]
 
 
 def main() -> None:
-    # Every matrix member is a primary 5-tuple of:
-    # `torch-version`: the PyTorch version as "X.Y.Z", e.g. "2.7.0"
+    # Every matrix member is a tuple of:
+    # `torch-version`: the PyTorch version as "X.Y.Z", e.g. "2.7.1"
     # `python-version`: the Python version as "3.X", e.g. "3.10"
-    # `rocm-version`: the ROCm version as "X.Y", e.g. "6.2"
+    # `rocm-version`: the ROCm version as "X.Y.Z", e.g. "6.4.4"
+    # `ubuntu-version`: Ubuntu version as "XX.XX", e.g. "22.04"
     # `cxx11-abi`: "TRUE" or "FALSE"
     # `target-arch`: the target architecture, e.g. "x86_64"
 
@@ -115,38 +74,44 @@ def main() -> None:
 
             torch_version_parsed = Version(torch_version)
             torch_x_y = f"{torch_version_parsed.major}.{torch_version_parsed.minor}"
-            for python_version in TORCH_PYTHON_SUPPORT[torch_x_y]:
-                rocm_versions = PYTORCH_ROCM_VERSIONS[(torch_x_y, target_arch)]
-                for rocm_version in rocm_versions:
-                    rocm_version_parsed = Version(rocm_version)
 
-                    # The CXX11 ABI became the default in PyTorch 2.7.0, but was also used in
-                    # PyTorch 2.6.0 (but _only_ for certain builds).
-                    #
-                    # See: https://pytorch.org/blog/pytorch2-6/
-                    cxx11_abi = torch_version_parsed >= Version("2.7.0")
+            # Get available image configurations for this PyTorch version
+            image_configs = ROCM_PYTORCH_IMAGES.get((torch_x_y, target_arch), [])
 
-                    row = {
-                        "target-arch": target_arch,
-                        "torch-version": str(torch_version_parsed),
-                        "python-version": python_version,
-                        "rocm-version": rocm_version,
-                        "cxx11-abi": "TRUE" if cxx11_abi else "FALSE",
-                    }
+            for config in image_configs:
+                rocm_version = config["rocm"]
+                python_version = config["python"]
+                ubuntu_version = config["ubuntu"]
 
-                    if row not in EXCLUSIONS:
-                        rows.append(row)
+                rocm_version_parsed = Version(rocm_version)
 
-    # Transform each row to add various nice-to-have representations of fields.
+                # The CXX11 ABI became the default in PyTorch 2.7.0
+                # See: https://pytorch.org/blog/pytorch2-6/
+                cxx11_abi = torch_version_parsed >= Version("2.7.0")
+
+                row = {
+                    "target-arch": target_arch,
+                    "torch-version": str(torch_version_parsed),
+                    "python-version": python_version,
+                    "rocm-version": rocm_version,
+                    "ubuntu-version": ubuntu_version,
+                    "cxx11-abi": "TRUE" if cxx11_abi else "FALSE",
+                }
+
+                if row not in EXCLUSIONS:
+                    rows.append(row)
+
+    # Transform each row to add various nice-to-have representations of fields
     for row in rows:
-        # `CI_*` variables: same as the original ones.
+        # `CI_*` variables: same as the original ones
         row["CI_ROCM_VERSION"] = row["rocm-version"]
         row["CI_TORCH_VERSION"] = row["torch-version"]
         row["CI_PYTHON_VERSION"] = row["python-version"]
+        row["CI_UBUNTU_VERSION"] = row["ubuntu-version"]
 
-        # `MATRIX_ROCM_VERSION`: XY instead of X.Y
+        # `MATRIX_ROCM_VERSION`: X.Y (major.minor only)
         rocm_version = Version(row["rocm-version"])
-        row["MATRIX_ROCM_VERSION"] = f"{rocm_version.major}{rocm_version.minor}"
+        row["MATRIX_ROCM_VERSION"] = f"{rocm_version.major}.{rocm_version.minor}"
 
         # `MATRIX_TORCH_VERSION`: `torch-version`, but only X.Y, no patch
         torch_version = Version(row["torch-version"])
@@ -155,34 +120,22 @@ def main() -> None:
         # `MATRIX_PYTHON_VERSION`: same as `python-version`, but with the dot removed
         row["MATRIX_PYTHON_VERSION"] = row["python-version"].replace(".", "")
 
-        # `MANYLINUX_ROCM_VERSION`: X.Y (same as input)
-        row["MANYLINUX_ROCM_VERSION"] = f"{rocm_version.major}.{rocm_version.minor}"
+        # DOCKER_IMAGE: the rocm/pytorch image tag to use
+        # Format: rocm{ROCM}_ubuntu{UBUNTU}_py{PYTHON}_pytorch_release_{PYTORCH}
+        docker_tag = f"rocm{row['rocm-version']}_ubuntu{row['ubuntu-version']}_py{row['python-version']}_pytorch_release_{row['torch-version']}"
+        row["DOCKER_IMAGE"] = f"rocm/pytorch:{docker_tag}"
 
-        # MANYLINUX_GLIBC_VERSION: the glibc version to use for manylinux builds.
-        row["MANYLINUX_GLIBC_VERSION"] = TORCH_GLIBC_VERSION[
-            row["MATRIX_TORCH_VERSION"]
-        ]
-
-        # `CI_AUDITWHEEL_EXCLUDES`: `--exclude {lib}` for each lib that should
-        # be excluded when running `auditwheel repair`.
-        rocm_major = str(rocm_version.major)
-        auditwheel_excludes = (
-            AUDITWHEEL_BLANKET_EXCLUDES
-            + AUDITWHEEL_ROCM_VERSION_EXCLUDES.get(rocm_major, [])
-        )
-        row["CI_AUDITWHEEL_EXCLUDES"] = " ".join(
-            f"--exclude {lib}" for lib in auditwheel_excludes
-        )
-
-        # RUNNER: the GitHub Actions runner to use.
+        # RUNNER: the GitHub Actions runner to use
         # ROCm builds run on x86_64
         row["RUNNER"] = "depot-ubuntu-24.04-16"
 
         # GPU_ARCHS: the GPU architectures to compile for, based on ROCm version
-        gpu_archs = ROCM_GPU_ARCHITECTURES.get(row["rocm-version"], ["gfx90a", "gfx942"])
+        rocm_major_minor = row["MATRIX_ROCM_VERSION"]
+        gpu_archs = ROCM_GPU_ARCHITECTURES.get(rocm_major_minor, ["gfx90a", "gfx942"])
         row["GPU_ARCHS"] = ";".join(gpu_archs)
 
-    print(json.dumps(rows))
+    # Limit to first row for initial testing
+    print(json.dumps(rows[:1]))
 
 
 if __name__ == "__main__":
