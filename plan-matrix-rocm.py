@@ -10,19 +10,21 @@ import json
 from packaging.version import Version
 
 # Add or remove versions as needed based on flash-attention ROCm compatibility.
-# Build only versions where official PyTorch ROCm wheels exist
+# Build only versions where BOTH official PyTorch ROCm wheels AND
+# pytorch/manylinux-builder Docker images exist
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    # "2.4.1",  # No official ROCm builds
-    # "2.5.1",  # ROCm 6.2 available but has compiler issues
-    # "2.6.0",  # No official ROCm builds
-    "2.7.1",
-    "2.8.0",
-    "2.9.0",
+    # "2.4.1",  # ROCm 6.1 wheels exist, but has issues
+    "2.5.0",   # ROCm 6.2 wheels and rocm6.2 builder available
+    "2.6.0",   # ROCm 6.1 wheels and rocm6.1 builder available
+    # "2.5.1",  # No ROCm wheels available
+    # "2.7.1",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
+    # "2.8.0",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
+    # "2.9.0",  # Only ROCm 6.3 wheels exist, no rocm6.3 builder image
 ]
 
 # ROCm builds are x86_64 only
 ARCH_TORCH_PAIRS = {
-    "x86_64": ["2.7.1", "2.8.0", "2.9.0"],
+    "x86_64": ["2.5.0", "2.6.0"],
 }
 
 # Supported Python versions for each PyTorch version.
@@ -37,14 +39,14 @@ TORCH_PYTHON_SUPPORT = {
 }
 
 # ROCm versions to build against for each PyTorch version.
-# Only include versions where official PyTorch wheels exist at download.pytorch.org/whl/rocmX.Y
+# Only include versions where BOTH official PyTorch wheels AND manylinux-builder images exist
 PYTORCH_ROCM_VERSIONS: dict[tuple[str, str], list[str]] = {
-    # ("2.4", "x86_64"): No ROCm builds available
-    # ("2.5", "x86_64"): ["6.2"],  # Available but has compiler issues with flash-attention
-    # ("2.6", "x86_64"): No ROCm builds available
-    ("2.7", "x86_64"): ["6.3"],  # PyTorch 2.7 has wheels for ROCm 6.3
-    ("2.8", "x86_64"): ["6.3"],  # PyTorch 2.8 has wheels for ROCm 6.3 (not 6.4)
-    ("2.9", "x86_64"): ["6.3"],  # PyTorch 2.9 has wheels for ROCm 6.3
+    # ("2.4", "x86_64"): ["6.1"],  # Wheels and builder exist but has issues
+    ("2.5", "x86_64"): ["6.2"],     # Both rocm6.2 wheels and builder exist
+    ("2.6", "x86_64"): ["6.1"],     # Both rocm6.1 wheels and builder exist
+    # ("2.7", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
+    # ("2.8", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
+    # ("2.9", "x86_64"): Only 6.3 wheels exist, no rocm6.3 builder
 }
 
 # GPU architectures supported by each ROCm version.
@@ -134,8 +136,6 @@ def main() -> None:
 
                     if row not in EXCLUSIONS:
                         rows.append(row)
-
-    rows = rows[:1]
 
     # Transform each row to add various nice-to-have representations of fields.
     for row in rows:
