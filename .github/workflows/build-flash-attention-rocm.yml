@@ -111,6 +111,9 @@ jobs:
               # Fix git ownership issues when running as root in container
               git config --global --add safe.directory "*"
 
+              # Install system dependencies for auditwheel
+              apt-get update && apt-get install -y patchelf
+
               # Install build dependencies
               pip install --no-cache-dir ninja packaging setuptools wheel build auditwheel
 
@@ -139,6 +142,18 @@ jobs:
               rm -f /workspace/dist/*.whl
               mv /workspace/dist-repaired/*.whl /workspace/dist/
 
+              # Rename wheel with ROCm version and CXX11 ABI info
+              cd /workspace/dist
+              for wheel in *.whl; do
+                # Add ROCm version, torch version, and CXX11 ABI to wheel name
+                # Original: flash_attn-X.Y.Z-cpXXX-cpXXX-linux_x86_64.whl
+                # New: flash_attn-X.Y.Z+rocmA.B.CtorchX.Y.ZcxxNNabi-cpXXX-cpXXX-linux_x86_64.whl
+                tmpname="rocm${{ matrix.rocm-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}"
+                new_wheel=$(echo "$wheel" | sed "s/-/+${tmpname}-/2")
+                mv "$wheel" "$new_wheel"
+                echo "Renamed: $wheel -> $new_wheel"
+              done
+
               # Show what was built
               ls -lh /workspace/dist/
             '
@@ -147,17 +162,6 @@ jobs:
         run: |
           wheel_name=$(ls dist/*whl | xargs -n 1 basename)
           echo "wheel_name=${wheel_name}" >> $GITHUB_ENV
-          ls -lh dist
-
-      - name: Rename wheel
-        run: |
-          # Add ROCm version and CXX11 ABI info to wheel name
-          tmpname=rocm${{ matrix.rocm-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}
-          original_wheel=$(ls dist/*whl | xargs -n 1 basename)
-          # Insert the custom name after the version number
-          new_wheel=$(echo "${original_wheel}" | sed "s/-/+${tmpname}-/2")
-          mv dist/${original_wheel} dist/${new_wheel}
-          echo "wheel_name=${new_wheel}" >> $GITHUB_ENV
           ls -lh dist
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
