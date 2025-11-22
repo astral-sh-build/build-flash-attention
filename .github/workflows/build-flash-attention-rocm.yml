@@ -1,0 +1,180 @@
+name: FlashAttention-ROCm
+
+permissions: {}
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      FLASH_ATTENTION_VERSION:
+        description: "FlashAttention version"
+        required: true
+        default: "v2.8.3"
+        type: string
+  release:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  plan-matrix:
+    name: Plan FlashAttention ROCm build matrix
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
+    permissions:
+      contents: read # for actions/checkout
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6
+
+      - name: Generate build matrix
+        id: generate-matrix
+        run: |
+          echo "matrix=$(uv run --script plan-matrix-rocm.py)" >> $GITHUB_OUTPUT
+
+  build-wheels:
+    name: Build Wheel
+    needs: [plan-matrix]
+    runs-on: ${{ matrix.RUNNER }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
+
+    permissions:
+      contents: write
+      actions: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Determine FlashAttention version
+        id: flash-attention-version
+        run: |
+          # Extract FlashAttention version from tag. Tags can be either:
+          # - v2.8.3 (legacy format; maps directly to FlashAttention version)
+          # - v2.8.3-r1 (new format; strip -rN suffix to get FlashAttention version)
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            # Remove -rN suffix if present
+            FLASH_ATTENTION_VERSION="${TAG%-r*}"
+          elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            FLASH_ATTENTION_VERSION="${INPUTS_FLASH_ATTENTION_VERSION}"
+          else
+            FLASH_ATTENTION_VERSION="v2.8.3"
+          fi
+          echo "version=${FLASH_ATTENTION_VERSION}" >> $GITHUB_OUTPUT
+          echo "Using FlashAttention version: ${FLASH_ATTENTION_VERSION}"
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          INPUTS_FLASH_ATTENTION_VERSION: ${{ inputs.FLASH_ATTENTION_VERSION }}
+
+      - name: Checkout Flash Attention
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: Dao-AILab/flash-attention
+          ref: ${{ steps.flash-attention-version.outputs.version }}
+          persist-credentials: false
+          submodules: true
+
+      - name: Checkout build scripts
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          path: build_scripts
+          persist-credentials: false
+
+      - name: Build wheel in ROCm container
+        run: |
+          docker run --rm \
+            -v $(pwd):/workspace \
+            -w /workspace \
+            -e GPU_ARCHS="${{ matrix.GPU_ARCHS }}" \
+            -e PYTORCH_ROCM_ARCH="${{ matrix.GPU_ARCHS }}" \
+            -e FLASH_ATTENTION_FORCE_BUILD="TRUE" \
+            -e FLASH_ATTENTION_FORCE_CXX11_ABI="${{ matrix.cxx11-abi }}" \
+            -e BUILD_TARGET="rocm" \
+            -e MAX_JOBS=8 \
+            ${{ matrix.DOCKER_IMAGE }} \
+            bash -c '
+              set -ex
+
+              # Fix git ownership issues when running as root in container
+              git config --global --add safe.directory "*"
+
+              # Install system dependencies for auditwheel
+              apt-get update && apt-get install -y patchelf
+
+              # Install build dependencies
+              pip install --no-cache-dir ninja packaging setuptools wheel build auditwheel
+
+              # Build the wheel
+              python -m build --wheel --no-isolation --outdir /workspace/dist
+
+              # Repair the wheel with auditwheel
+              mkdir -p /workspace/dist-repaired
+              auditwheel repair -w /workspace/dist-repaired /workspace/dist/*.whl \
+                --exclude libc10.so \
+                --exclude libc10_hip.so \
+                --exclude libtorch.so \
+                --exclude libtorch_python.so \
+                --exclude libtorch_cpu.so \
+                --exclude libtorch_hip.so \
+                --exclude libamdhip64.so \
+                --exclude libamdhip64.so.6 \
+                --exclude libhiprtc.so \
+                --exclude libhiprtc.so.6 \
+                --exclude librocblas.so \
+                --exclude librocblas.so.4 \
+                --exclude libhsa-runtime64.so.1 \
+                --exclude libamd_comgr.so.2
+
+              # Move repaired wheel back to dist
+              rm -f /workspace/dist/*.whl
+              mv /workspace/dist-repaired/*.whl /workspace/dist/
+
+              # Rename wheel with ROCm version and CXX11 ABI info
+              cd /workspace/dist
+              for wheel in *.whl; do
+                # Add ROCm version, torch version, and CXX11 ABI to wheel name
+                # Original: flash_attn-X.Y.Z-cpXXX-cpXXX-linux_x86_64.whl
+                # New: flash_attn-X.Y.Z+rocmA.B.CtorchX.Y.ZcxxNNabi-cpXXX-cpXXX-linux_x86_64.whl
+                tmpname="rocm${{ matrix.rocm-version }}torch${{ matrix.torch-version }}cxx11abi${{ matrix.cxx11-abi }}"
+                new_wheel=$(echo "$wheel" | sed "s/-/+${tmpname}-/2")
+                mv "$wheel" "$new_wheel"
+                echo "Renamed: $wheel -> $new_wheel"
+              done
+
+              # Show what was built
+              ls -lh /workspace/dist/
+            '
+
+      - name: Log Built Wheels
+        run: |
+          wheel_name=$(ls dist/*whl | xargs -n 1 basename)
+          echo "wheel_name=${wheel_name}" >> $GITHUB_ENV
+          ls -lh dist
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: github.event_name != 'release'
+        with:
+          name: ${{env.wheel_name}}
+          path: dist/${{env.wheel_name}}
+          if-no-files-found: error
+
+      - name: Upload wheels to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+        with:
+          files: ./dist/*.whl
+          tag_name: ${{ github.ref_name }}
+          append_body: true
