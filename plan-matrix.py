@@ -11,20 +11,18 @@ from packaging.version import Version
 
 # Add or remove versions as needed based on flash-attention compatibility.
 FLASH_ATTENTION_SUPPORTED_TORCH_VERSIONS = [
-    # "2.4.1",
-    # "2.5.1",
-    # "2.6.0",
-    # "2.7.1",
-    # "2.8.0",
-    # "2.9.0",
+    "2.4.1",
+    "2.5.1",
+    "2.6.0",
+    "2.7.1",
+    "2.8.0",
+    "2.9.0",
     "2.10.0",
 ]
 
 ARCH_TORCH_PAIRS = {
-    # "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0", "2.9.0", "2.10.0"],
-    # "aarch64": ["2.6.0", "2.7.1", "2.8.0", "2.9.0", "2.10.0"],
-    "x86_64": ["2.10.0"],
-    "aarch64": ["2.10.0"],
+    "x86_64": ["2.4.1", "2.5.1", "2.6.0", "2.7.1", "2.8.0", "2.9.0", "2.10.0"],
+    "aarch64": ["2.6.0", "2.7.1", "2.8.0", "2.9.0", "2.10.0"],
 }
 
 # Supported Python versions for each PyTorch version.
