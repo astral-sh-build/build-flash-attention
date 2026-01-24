@@ -42,7 +42,7 @@ jobs:
           echo "matrix=$(uv run --script plan-matrix.py)" >> $GITHUB_OUTPUT
         env:
           # Limit to a single build on PRs to speed up CI.
-          LIMIT_MATRIX: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          LIMIT_MATRIX: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-build') && '1' || '0' }}
 
   build-wheels:
     name: Build Wheel
