@@ -161,10 +161,14 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w /tmp/cibuildwheel/repaired_wheel {wheel} ${CI_AUDITWHEEL_EXCLUDES}"
           CIBW_BUILD_FRONTEND: "build[uv]; args: --no-isolation"
 
-      - name: Embed SBOM into wheel
+      - name: Embed metadata into wheel
         run: |
           for wheel in dist/*.whl; do
             uv run --script build_scripts/embed_patches.py "$wheel" "build_scripts/patches/${FLASH_ATTENTION_VERSION}" \
+              --license-expression "BSD-3-Clause" \
+              --license-file "LICENSE:LICENSE" \
+              --license-file "AUTHORS:AUTHORS" \
+              --license-file "csrc/cutlass/LICENSE.txt:third-party/cutlass/LICENSE.txt" \
               --source-repo "https://github.com/Dao-AILab/flash-attention" \
               --source-tag "${FLASH_ATTENTION_VERSION}" \
               --source-commit "${SOURCE_COMMIT}" \
