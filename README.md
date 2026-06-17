@@ -13,11 +13,11 @@ CUDA version, PyTorch version, and C++ ABI it was built against, such as
 PyTorch release.
 
 Pre-built wheels are available on
-[Astral's GPU indexes](https://wheels.astralshosted.com/index.html).
+[Astral's GPU indexes](https://wheels.astralhosted.com/index.html).
 For example, to install a CUDA 12.8 build:
 
 ```console
-$ uv add flash-attn --index astral-cu128=https://wheels.astralshosted.com/simple/cu128/
+$ uv add flash-attn --index astral-cu128=https://wheels.astralhosted.com/simple/cu128/
 ```
 
 This configures the index and uses it as the source for `flash-attn`:
@@ -28,13 +28,13 @@ flash-attn = { index = "astral-cu128" }
 
 [[tool.uv.index]]
 name = "astral-cu128"
-url = "https://wheels.astralshosted.com/simple/cu128/"
+url = "https://wheels.astralhosted.com/simple/cu128/"
 ```
 
 Or, with `uv pip`:
 
 ```console
-$ uv pip install --index https://wheels.astralshosted.com/simple/cu128/ flash-attn
+$ uv pip install --index https://wheels.astralhosted.com/simple/cu128/ flash-attn
 ```
 
 ## Supported versions
