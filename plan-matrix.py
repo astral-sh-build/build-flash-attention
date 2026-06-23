@@ -225,9 +225,9 @@ def main() -> None:
         else:
             raise ValueError(f"Unknown target arch: {row['target-arch']}")
 
-    # For PR builds, limit matrix to a single entry for faster CI.
+    # For PR builds, limit the matrix to the newest entry for faster CI.
     if os.environ.get("LIMIT_MATRIX") == "1":
-        rows = rows[:1]
+        rows = rows[-1:]
 
     print(json.dumps(rows))
 
