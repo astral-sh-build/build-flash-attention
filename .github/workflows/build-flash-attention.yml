@@ -10,7 +10,7 @@ on:
       FLASH_ATTENTION_VERSION:
         description: "FlashAttention version"
         required: true
-        default: "v2.8.3"
+        default: "v2.8.3.post1"
         type: string
   release:
     types: [created]
@@ -67,8 +67,8 @@ jobs:
         id: flash-attention-version
         run: |
           # Extract FlashAttention version from tag. Tags can be either:
-          # - v2.8.3 (legacy format; maps directly to FlashAttention version)
-          # - v2.8.3-r1 (new format; strip -rN suffix to get FlashAttention version)
+          # - v2.8.3.post1 (legacy format; maps directly to FlashAttention version)
+          # - v2.8.3.post1-r1 (new format; strip -rN suffix to get FlashAttention version)
           if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
             TAG="${GITHUB_REF_NAME}"
             # Remove -rN suffix if present
@@ -76,7 +76,7 @@ jobs:
           elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             FLASH_ATTENTION_VERSION="${INPUTS_FLASH_ATTENTION_VERSION}"
           else
-            FLASH_ATTENTION_VERSION="v2.8.3"
+            FLASH_ATTENTION_VERSION="v2.8.3.post1"
           fi
           echo "version=${FLASH_ATTENTION_VERSION}" >> $GITHUB_OUTPUT
           echo "Using FlashAttention version: ${FLASH_ATTENTION_VERSION}"
