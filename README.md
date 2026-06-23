@@ -41,7 +41,7 @@ $ uv pip install --index https://wheels.astral.sh/simple/cu128/ flash-attn
 
 Wheels are available for the following `flash-attn` version:
 
-- [`2.8.3`](https://github.com/astral-sh-build/build-flash-attention/releases/tag/v2.8.3-r3)
+- [`2.8.3`](https://github.com/astral-sh-build/build-flash-attention/releases/tag/v2.8.3-r4)
 
 The latest release, FlashAttention 2.8.3, supports the following combinations:
 
@@ -52,8 +52,10 @@ The latest release, FlashAttention 2.8.3, supports the following combinations:
 | 2.6.0   | 3.9–3.12  | 12.4, 12.6             | 12.6                   |
 | 2.7.1   | 3.9–3.13  | 12.6, 12.8             | 12.8                   |
 | 2.8.0   | 3.9–3.13  | 12.6, 12.8, 12.9       | 12.9                   |
-| 2.9.0   | 3.10–3.14 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
+| 2.9.1   | 3.10–3.13 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
 | 2.10.0  | 3.10–3.14 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
+| 2.11.0  | 3.10–3.14 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
+| 2.12.1  | 3.10–3.14 | 12.6, 13.0, 13.2       | 12.6, 13.0, 13.2       |
 
 ## License
 
