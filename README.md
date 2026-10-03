@@ -9,12 +9,12 @@ PyTorch, CUDA, and CPU architectures.
 Following the PyTorch convention, artifacts are published to a separate index
 for each CUDA version. Each wheel has a local version suffix that identifies the
 CUDA and PyTorch versions it was built against, such as
-`flash-attn==2.8.3+cu.12.8.torch.2.10`, and requires the matching
-PyTorch release.
+`flash-attn==2.8.3+cu.12.8.torch.2.10`, and requires the matching PyTorch
+release.
 
 Pre-built wheels are available on
-[Astral's GPU indexes](https://wheels.astral.sh/index.html).
-For example, to install a CUDA 12.8 build:
+[Astral's GPU indexes](https://wheels.astral.sh/index.html). For example, to
+install a CUDA 12.8 build:
 
 ```console
 $ uv add flash-attn --index astral-cu128=https://wheels.astral.sh/simple/cu128/
@@ -69,6 +69,8 @@ The latest release, FlashAttention 2.8.3, supports the following combinations:
 | 2.10.0  | 3.10–3.14 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
 | 2.11.0  | 3.10–3.14 | 12.6, 12.8, 12.9, 13.0 | 12.6, 12.8, 12.9, 13.0 |
 | 2.12.1  | 3.10–3.14 | 12.6, 13.0, 13.2       | 12.6, 13.0, 13.2       |
+| 2.13.0  | 3.10–3.15 | 12.6, 13.0, 13.2       | 12.6, 13.0, 13.2       |
+| 2.14.1  | 3.10–3.15 | 12.6, 13.0, 13.2       | 12.6, 13.0, 13.2       |
 
 ## License
 
